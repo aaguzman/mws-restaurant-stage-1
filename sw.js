@@ -10,7 +10,7 @@ self.addEventListener('install', function(event){
                 'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
                 'js/dbhelper.js',
                 'js/main.js',
-                'manifest.json'
+                'manifest.json',
             ]);
         })
     );
@@ -45,3 +45,11 @@ function servePhoto(request) {
         });
     });
 }
+
+self.addEventListener('message', function(event) {
+    if (event.data.action === 'savedMessage') {
+      this.window.setInterval(() => {
+        this.console.log("Interval set");
+      }, 3000)
+    }
+  });

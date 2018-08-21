@@ -7,6 +7,19 @@ var newMap;
 document.addEventListener('DOMContentLoaded', (event) => {
   DBHelper.openIDB();  
   initMap();
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    console.log('registered service worker',reg)
+  });
+});
+
+
+window.addEventListener('online',  ()=> {
+  console.log("online")
+  DBHelper.reSubmitReviews(() => {
+    const ul = document.getElementById('reviews-list');
+    ul.innerHTML = '';
+    DBHelper.fetchReviews(getParameterByName('id'),fillReviewsHTML)
+  });
 });
 
 /**
@@ -107,7 +120,8 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
     fillRestaurantHoursHTML();
   }
   // fill reviews
-  fillReviewsHTML();
+  DBHelper.fetchReviews(restaurant.id,fillReviewsHTML)
+  
 }
 
 /**
@@ -164,7 +178,8 @@ createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('h4');
-  date.innerHTML = review.date;
+  const d = new Date(review.createdAt);
+  date.innerHTML =`${d.getMonth()}/${d.getDate()}/${d.getFullYear()}`;
   li.appendChild(date);
 
   const rating = document.createElement('h4');
@@ -177,6 +192,7 @@ createReviewHTML = (review) => {
 
   return li;
 }
+
 
 /**
  * Add restaurant name to the breadcrumb navigation menu
@@ -202,4 +218,29 @@ getParameterByName = (name, url) => {
   if (!results[2])
     return '';
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
+
+submitReview = (event) => {
+
+  event.preventDefault();
+  const review = {
+    "restaurant_id": getParameterByName('id'),
+    "name": document.getElementById('form-name').value,
+    "rating": document.getElementById('form-rating').value,
+    "comments": document.getElementById('form-comment').value,
+    "id": Math.random().toString(36).substr(2, 9)
+  }
+  DBHelper.sendReview(review,() => {
+    const ul = document.getElementById('reviews-list');
+    ul.innerHTML = '';
+    DBHelper.fetchReviews(getParameterByName('id'),fillReviewsHTML)
+   
+  });
+  
+  /*
+  "restaurant_id": <restaurant_id>,
+  "name": <reviewer_name>,
+  "rating": <rating>,
+  "comments": <comment_text>
+  */
 }

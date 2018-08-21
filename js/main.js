@@ -161,19 +161,37 @@ fillRestaurantsHTML = (restaurants = self.restaurants) => {
  * Create restaurant HTML.
  */
 createRestaurantHTML = (restaurant) => {
+  console.log(restaurant)
   const li = document.createElement('li');
   li.setAttribute("tabindex","0");
 
   const image = document.createElement('img');
   image.srcset = DBHelper.imageUrlForRestaurant(restaurant,'aspect');
   image.src =  DBHelper.imageUrlForRestaurant(restaurant);
-  image.alt = `Image of ${restaurant.name}`
+  image.alt = `Image of ${restaurant.name}`;
 
+  const heart = document.createElement('div');
+  heart.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path class = "heart-outline" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+  heart.alt = 'Favorite Restraurant';
+  heart.className = 'favorite-icon';
+  if(restaurant.is_favorite == "true")
+    heart.classList.toggle('favorite-selected');
+  
+  heart.addEventListener('click', function(){
+    heart.classList.toggle('favorite-selected');
+    if(restaurant.is_favorite == "false")
+      DBHelper.favoriteRestaurant(restaurant.id)
+    else
+      DBHelper.unfavoriteRestaurant(restaurant.id)
+  }); 
   //sourceSmall.media ='(max-width:1299)';
   //image.size = ('')
   image.className = 'restaurant-img';
   //image.src = DBHelper.imageUrlForRestaurant(restaurant);
+ 
   li.append(image);
+  li.append(heart);
+  
 
   const name = document.createElement('h2');
   name.innerHTML = restaurant.name;
@@ -212,7 +230,7 @@ addMarkersToMap = (restaurants = self.restaurants) => {
     self.markers.push(marker);
   });
 
-} 
+}
 
 const menu = document.getElementById('menu');
 const selects = document.querySelector('#filter-selects');
