@@ -17,9 +17,12 @@ class DBHelper {
       let store = upgradeDb.createObjectStore('restaurants',{
         keyPath:'id'
       });
+      let errorStore = upgradeDb.createObjectStore('error',{
+        keyPath:'id'
+      })
     })
   }
-  
+
 
   /**
    * Fetch all restaurants.
@@ -204,6 +207,15 @@ class DBHelper {
       marker.addTo(newMap);
     return marker;
   } 
+
+  static fetchReviews (id,callback) {
+    fetch(`http://localhost:1337/reviews/?restaurant_id=${id}`).then(
+      responce => responce.json()
+    .then(data =>{
+      console.log(data)
+      callback(data);
+    }))
+  }
   /* static mapMarkerForRestaurant(restaurant, map) {
     const marker = new google.maps.Marker({
       position: restaurant.latlng,
@@ -215,5 +227,71 @@ class DBHelper {
     return marker;
   } */
 
+  static sendReview (review,callback) {
+    fetch('http://localhost:1337/reviews/',{
+      method: 'post',
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+    },
+      body: JSON.stringify(review)
+    }).then(response => {
+      if(response.ok){
+        return response.json()
+      }
+      else{
+      throw Error(response.statusText);
+      }
+    }).then((data)=>{
+      callback();
+    }).catch((error) => {
+      console.log('Request failed:', error.message)
+      DBHelper.idb.then((db) =>{
+        console.log("FAILED REVIEW", review)
+        const store = db.transaction('error','readwrite').objectStore('error');
+        //navigator.serviceWorker.controller.postMessage({"action": "savedMessage"})
+        return store.put(review);
+        
+      });
+    })
+  }
+
+  static reSubmitReviews (callback) {
+    DBHelper.idb.then((db) =>{
+      const store = db.transaction('error','readwrite').objectStore('error');
+      //navigator.serviceWorker.controller.postMessage({"action": "savedMessage"})
+      return store.getAll().then((reviews) => {
+        reviews.forEach((review) => {
+          DBHelper.sendReview(review,callback);
+        })
+      })
+    }).then(DBHelper.idb.then((db)=> {
+      const storeToClear = db.transaction('error','readwrite').objectStore('error');
+      storeToClear.clear();
+    })
+  );
+  }
+
+  static favoriteRestaurant (id,callback) {
+   
+    fetch(`http://localhost:1337/restaurants/${id}/?is_favorite=true`,{
+      method: 'put'
+    }).then(response => response.json().then(data => {
+      DBHelper.idb.then((db) =>{
+        const store = db.transaction('restaurants','readwrite').objectStore('restaurants');
+        return store.put(data);
+      });
+    }));
+  }
+
+  static unfavoriteRestaurant (id,callback) {
+    fetch(`http://localhost:1337/restaurants/${id}/?is_favorite=false`,{
+      method: 'put'
+    }).then(response => response.json().then(data => {
+      DBHelper.idb.then((db) =>{
+        const store = db.transaction('restaurants','readwrite').objectStore('restaurants');
+        return store.put(data);
+      });
+    }));
+  }
 }
 
